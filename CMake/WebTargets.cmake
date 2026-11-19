@@ -13,6 +13,9 @@ set(WEB_OUTPUT_DIR ${CMAKE_BINARY_DIR}/mm)
 ################################################################################
 # ROM extractor: ZAPD + OTRExporter compiled to a standalone module
 ################################################################################
+if(TARGET OTRExporter)
+    target_include_directories(OTRExporter PRIVATE ${CMAKE_SOURCE_DIR}/ZAPDTR/lib/tinyxml2)
+endif()
 add_executable(2ship-extractor ${WEB_SRC_DIR}/extractor/ExtractorMain.cpp)
 target_compile_definitions(2ship-extractor PRIVATE TWOSHIP_PORT_VERSION="${CMAKE_PROJECT_VERSION}")
 target_link_libraries(2ship-extractor PRIVATE ZAPDLib)
