@@ -1,2 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+# Keep patch files byte-for-byte (the ZAPD patch has CRLF line endings, like the files it patches).
+mm/web/patches/*.patch -text

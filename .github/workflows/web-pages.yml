@@ -1,0 +1,104 @@
+# Builds the web port of 2Ship (WebAssembly) and publishes it with GitHub Pages.
+# The site has no game assets: each player provides their own Majora's Mask ROM, which is extracted in their browser.
+# Adapted from ShipWeb's workflow (github.com/samfisher753/ShipWeb).
+name: web-pages
+
+on:
+  push:
+    branches: [web-port]
+    paths-ignore:
+      - "**.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer push replaces a pending one.
+concurrency:
+  group: web-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    env:
+      # Emscripten's cache of built system libraries and ports (SDL2, libpng...), kept between runs below.
+      EM_CACHE: ${{ github.workspace }}/.emscripten-cache
+      # Emscripten runs clang through ccache, so unchanged files aren't compiled again.
+      EM_COMPILER_WRAPPER: ccache
+      # emsdk is installed fresh each run, so identify the compiler by its (pinned) version, not the file's date.
+      CCACHE_COMPILERCHECK: "string:emscripten-6.0.12"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y $(cat .github/workflows/apt-deps.txt) ccache
+
+      # Step 1, native: build 2ship.o2r (the port's own assets). It needs ZAPD, which is simplest to run natively. The
+      # game's assets (mm.o2r) are NOT built here: they come from each player's ROM, in their browser.
+      - name: Build 2ship.o2r (native)
+        run: |
+          cmake -S . -B build-native -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-native --target Generate2ShipOtr
+          test -f 2ship.o2r
+
+      # Step 2, web: patch the submodules for WebAssembly (no threads, WebGL, browser storage...) and build.
+      - name: Patch submodules for the web
+        run: |
+          git -C libultraship apply --ignore-whitespace ../mm/web/patches/libultraship.patch
+          git -C ZAPDTR apply --ignore-whitespace ../mm/web/patches/zapdtr.patch
+
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: web-pages
+          max-size: 2G
+
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 6.0.12
+
+      - uses: actions/cache@v4
+        with:
+          path: .emscripten-cache
+          key: emscripten-cache-6.0.12-${{ github.sha }}
+          restore-keys: emscripten-cache-6.0.12-
+
+      - name: Configure (web)
+        run: emcmake cmake -S . -B build-web -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build (web)
+        run: |
+          cmake --build build-web --target 2ship 2ship-extractor
+          ccache --show-stats
+
+      - name: Prepare the site
+        run: |
+          mkdir site
+          cd build-web/mm
+          # The game page is the site's home page.
+          cp 2ship.html ../../site/index.html
+          cp 2ship.js 2ship.wasm 2ship.data \
+             extractor-worker.js 2ship-extractor.js 2ship-extractor.wasm 2ship-extractor.data ../../site/
+          # Fail the build rather than publish game data: only the engine may be on the site.
+          if ls ../../site | grep -qi "\.o2r$"; then echo "Refusing to publish an .o2r archive"; exit 1; fi
+          ls -la ../../site
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

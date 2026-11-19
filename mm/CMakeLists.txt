@@ -455,14 +455,17 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
             >
             $<$<COMPILE_LANGUAGE:CXX>:-fpermissive>
             $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-enum-enum-conversion>
-            -pthread
+            # The web build has no threads (-pthread would need SharedArrayBuffer, which GitHub Pages can't enable).
+            $<$<NOT:$<BOOL:${EMSCRIPTEN}>>:-pthread>
 	    ${CPU_OPTION}
         )
 
-        target_link_options(${PROJECT_NAME} PRIVATE
-            -pthread
-            -Wl,-export-dynamic
-        )
+        if(NOT EMSCRIPTEN)
+            target_link_options(${PROJECT_NAME} PRIVATE
+                -pthread
+                -Wl,-export-dynamic
+            )
+        endif()
     endif()
 endif()
 
@@ -602,6 +605,18 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "CafeOS")
     target_include_directories(${PROJECT_NAME} PRIVATE
         ${DEVKITPRO}/portlibs/wiiu/include/
     )
+elseif(EMSCRIPTEN)
+    # Ogg/Vorbis/SDL2 come from Emscripten ports (see CMake/EmscriptenConfig.cmake). ZAPD isn't linked into the game:
+    # ROM extraction happens in the browser, in a separate module (see CMake/WebTargets.cmake).
+    find_library(MATH_LIBRARY m)
+    set(ADDITIONAL_LIBRARY_DEPENDENCIES
+        "libultraship;"
+        SDL2::SDL2
+        ${CMAKE_DL_LIBS}
+    )
+    if(MATH_LIBRARY)
+        list(APPEND ADDITIONAL_LIBRARY_DEPENDENCIES ${MATH_LIBRARY})
+    endif()
 else()
     find_package(SDL2)
     set(THREADS_PREFER_PTHREAD_FLAG ON)

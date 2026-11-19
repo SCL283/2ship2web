@@ -122,6 +122,12 @@ int SDL_main(int argc, char* argv[] /* void* arg*/) {
 
     Graph_ThreadEntry(0);
 
+#ifdef __EMSCRIPTEN__
+    // On the web the frame loop is driven by the browser (see Graph_ThreadEntry), so main() must return without
+    // running the shutdown code below. The runtime stays alive (EXIT_RUNTIME=0).
+    return 0;
+#endif
+
     exit = false;
 
     while (!exit) {

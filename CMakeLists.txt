@@ -8,6 +8,7 @@ set(GAME_STR "MM")
 project(2s2h VERSION 5.1.0 LANGUAGES C CXX)
 include(CMake/2ship-cvars.cmake)
 include(CMake/lus-cvars.cmake)
+include(CMake/EmscriptenConfig.cmake) # web build only; does nothing otherwise
 set(SPDLOG_LEVEL_TRACE 0)
 set(SPDLOG_LEVEL_OFF 6)
 set(SPDLOG_MIN_CUTOFF SPDLOG_LEVEL_TRACE CACHE STRING "cutoff at trace")
@@ -229,6 +230,10 @@ foreach(_vendored libultraship ZAPDLib ZAPD libgfxd OTRExporter prism)
 endforeach()
 
 add_subdirectory(mm)
+
+if(EMSCRIPTEN)
+    include(CMake/WebTargets.cmake)
+endif()
 
 set_property(TARGET 2ship PROPERTY APPIMAGE_DESKTOP_FILE_TERMINAL YES)
 set_property(TARGET 2ship PROPERTY APPIMAGE_DESKTOP_FILE "${CMAKE_SOURCE_DIR}/mm/linux/2s2h.desktop")

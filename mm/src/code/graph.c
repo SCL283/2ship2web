@@ -7,6 +7,10 @@
 #include <libultraship/bridge/consolevariablebridge.h>
 #include <libultraship/bridge/windowbridge.h>
 #include <string.h>
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+void Graph_RunPendingInterpolatedFrame(void);
+#endif
 
 // Variables are put before most headers as a hacky way to bypass bss reordering
 FaultAddrConvClient sGraphFaultAddrConvClient;
@@ -376,6 +380,29 @@ void RunFrame() {
     u32 size;
     s32 pad[2];
 
+#ifdef __EMSCRIPTEN__
+    // requestAnimationFrame fires at the display refresh rate (usually 60Hz) and there is no thread to sleep on, so
+    // pace the game logic here: run one game tick every (R_UPDATE_RATE / 60) seconds (20Hz by default). Between
+    // ticks, show the next interpolated frame of the last one instead.
+    if (runFrameContext.state == 1) {
+        static double sNextTickMs = 0.0;
+        double nowMs = emscripten_get_now();
+        double intervalMs = 1000.0 * (R_UPDATE_RATE > 0 ? R_UPDATE_RATE : 3) / 60.0;
+        if (sNextTickMs == 0.0) {
+            sNextTickMs = nowMs;
+        }
+        if (nowMs + 1.0 < sNextTickMs) {
+            Graph_RunPendingInterpolatedFrame();
+            return;
+        }
+        sNextTickMs += intervalMs;
+        // If we fell far behind (slow frame, background tab...), don't try to catch up with a burst of ticks.
+        if (nowMs - sNextTickMs > intervalMs * 2.0) {
+            sNextTickMs = nowMs + intervalMs;
+        }
+    }
+#endif
+
     switch (runFrameContext.state) {
         case 0:
             break;
@@ -427,9 +454,14 @@ void RunFrame() {
 }
 
 void Graph_ThreadEntry(void* arg0) {
+#ifdef __EMSCRIPTEN__
+    // The browser calls RunFrame once per animation frame; this returns immediately.
+    emscripten_set_main_loop(RunFrame, 0, 0);
+#else
     while (WindowIsRunning()) {
         RunFrame();
     }
+#endif
 }
 
 // #region 2S2H [Debugging] Debugging methods for viewing file/line info in the renderer.
