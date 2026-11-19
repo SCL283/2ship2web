@@ -79,7 +79,7 @@ target_link_options(2ship PRIVATE
 # The page runs the ROM extractor when there are no extracted assets yet.
 add_dependencies(2ship 2ship-extractor)
 set_property(TARGET 2ship APPEND PROPERTY LINK_DEPENDS
-    ${WEB_2SHIP_O2R}
+    ${WEB_PRELOAD_DIR}/2ship.o2r
     ${WEB_SRC_DIR}/shell.html
     ${CMAKE_BINARY_DIR}/mm/web-version.js
     ${WEB_SRC_DIR}/persistence.js
