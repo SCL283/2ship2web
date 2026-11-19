@@ -13,9 +13,12 @@ set(WEB_OUTPUT_DIR ${CMAKE_BINARY_DIR}/mm)
 ################################################################################
 # ROM extractor: ZAPD + OTRExporter compiled to a standalone module
 ################################################################################
+# OTRExporter needs the newer tinyxml2 (InsertNewChildElement) and libzip headers. On desktop they come from system
+# packages; on the web use the copies fetched in EmscriptenConfig.cmake. (ZAPD itself keeps its bundled tinyxml2.)
 if(TARGET OTRExporter)
-    target_include_directories(OTRExporter PRIVATE ${CMAKE_SOURCE_DIR}/ZAPDTR/lib/tinyxml2)
+    target_include_directories(OTRExporter PRIVATE ${tinyxml2_SOURCE_DIR} ${libzip_SOURCE_DIR}/lib ${libzip_BINARY_DIR})
 endif()
+
 add_executable(2ship-extractor ${WEB_SRC_DIR}/extractor/ExtractorMain.cpp)
 target_compile_definitions(2ship-extractor PRIVATE TWOSHIP_PORT_VERSION="${CMAKE_PROJECT_VERSION}")
 target_link_libraries(2ship-extractor PRIVATE ZAPDLib)
@@ -53,7 +56,8 @@ target_sources(2ship PRIVATE ${WEB_SRC_DIR}/ZapdStub.cpp)
 # skip the ROM screen while developing; never publish such a build).
 set(WEB_PRELOAD_DIR ${CMAKE_BINARY_DIR}/preload)
 file(MAKE_DIRECTORY ${WEB_PRELOAD_DIR})
-
+# Copied while configuring (not as a build step on the 2ship target, which CMake only allows from the folder that
+# defines the target). mm/CMakeLists.txt downloads gamecontrollerdb.txt while configuring, so it exists by now.
 file(COPY ${WEB_2SHIP_O2R} DESTINATION ${WEB_PRELOAD_DIR})
 if(EXISTS ${CMAKE_BINARY_DIR}/gamecontrollerdb.txt)
     file(COPY ${CMAKE_BINARY_DIR}/gamecontrollerdb.txt DESTINATION ${WEB_PRELOAD_DIR})

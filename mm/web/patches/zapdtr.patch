@@ -31,6 +31,20 @@ index 91b88df..6f99cf4 100644
  else()
  	set(THREADS_PREFER_PTHREAD_FLAG ON)
  	find_package(Threads REQUIRED)
+diff --git a/ZAPD/CrashHandler.cpp b/ZAPD/CrashHandler.cpp
+index 6c05733..1390d4e 100644
+--- a/ZAPD/CrashHandler.cpp
++++ b/ZAPD/CrashHandler.cpp
+@@ -1,7 +1,8 @@
+ #include "CrashHandler.h"
+ #include "Utils/StringHelper.h"
+ 
+-#if __has_include(<unistd.h>)
++// Emscripten has unistd.h but no execinfo.h (backtrace), so it takes the unsupported-platform path below.
++#if __has_include(<unistd.h>) && !defined(__EMSCRIPTEN__)
+ #define HAS_POSIX 1
+ #else
+ #define HAS_POSIX 0
 diff --git a/ZAPD/Main.cpp b/ZAPD/Main.cpp
 index c5f146e..38c958f 100644
 --- a/ZAPD/Main.cpp

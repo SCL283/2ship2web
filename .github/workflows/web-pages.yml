@@ -75,6 +75,7 @@ jobs:
       - name: Build (web)
         shell: bash
         run: |
+          # -k 0 keeps compiling after an error, so one run reports every error instead of only the first.
           cmake --build build-web --target 2ship 2ship-extractor -- -k 0 2>&1 | tee build.log || {
             echo "=============== ERROR SUMMARY ==============="
             grep -E "error:|FAILED:|undefined symbol|duplicate symbol" build.log | head -150
