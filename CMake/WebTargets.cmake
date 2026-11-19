@@ -50,10 +50,13 @@ target_sources(2ship PRIVATE ${WEB_SRC_DIR}/ZapdStub.cpp)
 # skip the ROM screen while developing; never publish such a build).
 set(WEB_PRELOAD_DIR ${CMAKE_BINARY_DIR}/preload)
 file(MAKE_DIRECTORY ${WEB_PRELOAD_DIR})
-add_custom_command(TARGET 2ship PRE_LINK
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${WEB_2SHIP_O2R} ${CMAKE_BINARY_DIR}/gamecontrollerdb.txt ${WEB_PRELOAD_DIR}
-    VERBATIM
-)
+
+file(COPY ${WEB_2SHIP_O2R} DESTINATION ${WEB_PRELOAD_DIR})
+if(EXISTS ${CMAKE_BINARY_DIR}/gamecontrollerdb.txt)
+    file(COPY ${CMAKE_BINARY_DIR}/gamecontrollerdb.txt DESTINATION ${WEB_PRELOAD_DIR})
+else()
+    message(WARNING "gamecontrollerdb.txt wasn't downloaded: gamepads not in SDL's built-in list won't be recognised")
+endif()
 
 configure_file(${WEB_SRC_DIR}/version.js.in ${CMAKE_BINARY_DIR}/mm/web-version.js @ONLY)
 target_link_options(2ship PRIVATE
