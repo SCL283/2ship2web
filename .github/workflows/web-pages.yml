@@ -73,8 +73,13 @@ jobs:
         run: emcmake cmake -S . -B build-web -G Ninja -DCMAKE_BUILD_TYPE=Release
 
       - name: Build (web)
+        shell: bash
         run: |
-          cmake --build build-web --target 2ship 2ship-extractor
+          cmake --build build-web --target 2ship 2ship-extractor -- -k 0 2>&1 | tee build.log || {
+            echo "=============== ERROR SUMMARY ==============="
+            grep -E "error:|FAILED:|undefined symbol|duplicate symbol" build.log | head -150
+            exit 1
+          }
           ccache --show-stats
 
       - name: Prepare the site
