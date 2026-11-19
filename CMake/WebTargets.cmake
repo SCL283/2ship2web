@@ -51,6 +51,8 @@ endif()
 
 # The ZAPD stand-in that Extract.cpp links against (the real one lives in the extractor module).
 target_sources(2ship PRIVATE ${WEB_SRC_DIR}/ZapdStub.cpp)
+# libultraship's O2rArchive.h includes <zip.h>; libzip is fetched, so give the game its include dirs.
+target_include_directories(2ship PRIVATE ${libzip_SOURCE_DIR}/lib ${libzip_BINARY_DIR})
 
 # Everything in this folder is bundled into 2ship.data. Files put there by hand are bundled too (e.g. a mm.o2r, to
 # skip the ROM screen while developing; never publish such a build).

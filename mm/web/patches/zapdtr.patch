@@ -56,7 +56,7 @@ index c5f146e..38c958f 100644
 +#ifdef __EMSCRIPTEN__
 +// Extraction is single threaded on the web, so nothing can poll extractCount while it runs. The web extractor
 +// (a separate module that links this library) defines this to report progress to the page instead.
-+extern "C" void ZAPD_Web_Progress(size_t done, size_t total);
++extern "C" __attribute__((weak)) void ZAPD_Web_Progress(size_t done, size_t total);
 +#endif
  int ExtractFunc(int workerID, int fileListSize, std::string fileListItem, ZFileMode fileMode);
  
@@ -81,7 +81,7 @@ index c5f146e..38c958f 100644
  							*extractCount = i;
  						}
 +#ifdef __EMSCRIPTEN__
-+						ZAPD_Web_Progress(i + 1, fileListSize);
++						if (ZAPD_Web_Progress != nullptr) ZAPD_Web_Progress(i + 1, fileListSize);
 +#endif
  					}
  					else
