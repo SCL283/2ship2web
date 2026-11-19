@@ -38,7 +38,7 @@ jobs:
       - name: Install native build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y $(cat .github/workflows/apt-deps.txt) ccache
+          sudo apt-get install -y $(cat .github/workflows/apt-deps.txt) libzip-dev zipcmp zipmerge ziptool ccache
 
       # Step 1, native: build 2ship.o2r (the port's own assets). It needs ZAPD, which is simplest to run natively. The
       # game's assets (mm.o2r) are NOT built here: they come from each player's ROM, in their browser.
