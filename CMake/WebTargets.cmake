@@ -68,6 +68,8 @@ else()
 endif()
 
 configure_file(${WEB_SRC_DIR}/version.js.in ${CMAKE_BINARY_DIR}/mm/web-version.js @ONLY)
+# Diagnostics: JS-side assertions make the browser console say why the game aborted. Link-only, so the rebuild is quick.
+target_link_options(2ship PRIVATE "SHELL:-s ASSERTIONS=1")
 target_link_options(2ship PRIVATE
     "SHELL:--preload-file ${WEB_PRELOAD_DIR}@/"
     "SHELL:--shell-file ${WEB_SRC_DIR}/shell.html"
